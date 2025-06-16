@@ -3,12 +3,14 @@ from tkinter import messagebox
 import threading
 import time
 import pyautogui
+from PIL import Image, ImageTk
+import os
 
 class FishingApp:
     def __init__(self, root):
         self.root = root
         root.title("喵牌釣魚大師")
-        root.geometry("350x220")
+        root.geometry("350x200")
         root.resizable(False, False)
 
         self.font_name = ("俐方體11號", 12)
@@ -22,15 +24,15 @@ class FishingApp:
         frame_time.pack(pady=5)
 
         self.entry_hours = tk.Spinbox(frame_time, from_=0, to=99, width=3, font=self.font_name)
-        self.entry_hours.grid(row=0, column=0, padx=(0, 5))
+        self.entry_hours.grid(row=0, column=0, padx=(0, 0))
         self.entry_hours.delete(0, "end")
         self.entry_hours.insert(0, "10")
 
         label_hours = tk.Label(frame_time, text="小時", font=self.font_name)
-        label_hours.grid(row=0, column=1, padx=(0, 15))
+        label_hours.grid(row=0, column=1, padx=(0, 0))
 
         self.entry_minutes = tk.Spinbox(frame_time, from_=0, to=59, width=3, font=self.font_name)
-        self.entry_minutes.grid(row=0, column=2, padx=(0, 5))
+        self.entry_minutes.grid(row=0, column=2, padx=(0, 0))
         self.entry_minutes.delete(0, "end")
         self.entry_minutes.insert(0, "00")
 
@@ -39,11 +41,23 @@ class FishingApp:
 
         # 剩餘時間標籤
         self.label_timer = tk.Label(root, text="", font=self.font_name, fg="#333333")
-        self.label_timer.pack(pady=(20, 0))
+        self.label_timer.pack(pady=(5, 0))
+
+        # 圖片
+        frame_topleft = tk.Frame(root)
+        frame_topleft.place(relx=0.0, rely=0.0, anchor='nw', x=10, y=10)
+        try:
+            img = Image.open(os.path.join(os.path.dirname(__file__), "azusa.png"))
+            img = img.resize((32, 32), Image.Resampling.LANCZOS)
+            self.azusa_img = ImageTk.PhotoImage(img)
+            self.label_img = tk.Label(frame_topleft, image=self.azusa_img)
+            self.label_img.pack()
+        except Exception as e:
+            print("圖片載入失敗:", e)
 
         # 按鈕區域（放在最底下）
         frame_btn = tk.Frame(root)
-        frame_btn.pack(side=tk.BOTTOM, pady=(5, 15))
+        frame_btn.pack(side=tk.BOTTOM, pady=(0, 20))
 
         self.btn_start = tk.Button(
             frame_btn, text="開始釣魚", font=self.font_name,
