@@ -15,12 +15,18 @@ class FishingApp:
 
         self.font_name = ("俐方體11號", 12)
 
+        self.is_showing_help = False
+
+        # 主畫面 Frame
+        self.main_frame = tk.Frame(root)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
+
         # 標題
-        self.label_title = tk.Label(root, text="🐟 自動釣魚工具", font=(self.font_name[0], 16), fg="#FF6600")
+        self.label_title = tk.Label(self.main_frame, text="🐟 自動釣魚工具", font=(self.font_name[0], 16), fg="#FF6600")
         self.label_title.pack(pady=(10, 5))
 
         # 時間輸入框區域
-        frame_time = tk.Frame(root)
+        frame_time = tk.Frame(self.main_frame)
         frame_time.pack(pady=5)
 
         self.entry_hours = tk.Spinbox(frame_time, from_=0, to=99, width=3, font=self.font_name)
@@ -40,23 +46,24 @@ class FishingApp:
         label_minutes.grid(row=0, column=3)
 
         # 剩餘時間標籤
-        self.label_timer = tk.Label(root, text="", font=self.font_name, fg="#333333")
+        self.label_timer = tk.Label(self.main_frame, text="", font=self.font_name, fg="#333333")
         self.label_timer.pack(pady=(5, 0))
 
-        # 圖片
-        frame_topleft = tk.Frame(root)
-        frame_topleft.place(relx=0.0, rely=0.0, anchor='nw', x=10, y=10)
+        # 圖片（左上角）
+        self.frame_topleft = tk.Frame(self.root)
+        self.frame_topleft.place(relx=0.0, rely=0.0, anchor='nw', x=10, y=10)
         try:
             img = Image.open(os.path.join(os.path.dirname(__file__), "azusa.png"))
             img = img.resize((32, 32), Image.Resampling.LANCZOS)
             self.azusa_img = ImageTk.PhotoImage(img)
-            self.label_img = tk.Label(frame_topleft, image=self.azusa_img)
+            self.label_img = tk.Label(self.frame_topleft, image=self.azusa_img, cursor="hand2")
             self.label_img.pack()
+            self.label_img.bind("<Button-1>", self.toggle_help)
         except Exception as e:
             print("圖片載入失敗:", e)
 
         # 按鈕區域（放在最底下）
-        frame_btn = tk.Frame(root)
+        frame_btn = tk.Frame(self.main_frame)
         frame_btn.pack(side=tk.BOTTOM, pady=(0, 20))
 
         self.btn_start = tk.Button(
@@ -74,9 +81,39 @@ class FishingApp:
         )
         self.btn_stop.grid(row=0, column=1, padx=10)
 
+        # 說明畫面
+        self.help_frame = tk.Frame(root)
+        # 在 help_frame 中加一個中介 Frame
+        self.help_inner_frame = tk.Frame(self.help_frame)
+        self.help_inner_frame.pack(expand=True)
+
+        # 說明文字放進 inner_frame 並用 padding 適度控制
+        self.label_help = tk.Label(
+            self.help_inner_frame,
+            text="   AzusaFoT超級釣魚大師\n- 請確保您的釣竿有附魔\n- 請確保您是2K螢幕\n- 本工具只支援自動出竿\n   收竿要靠岩漿燒\n【按作者圖示返回主畫面】",
+            font=self.font_name,
+            justify="left"
+        )
+        self.label_help.pack(padx=10, pady=10)
+
+
         self.running = False
         self.thread = None
         self.remaining_seconds = 0
+
+    def toggle_help(self, event):
+        if self.running:
+            return
+        if not self.is_showing_help:
+            self.main_frame.pack_forget()
+            self.help_frame.pack(fill=tk.BOTH, expand=True)
+        else:
+            self.help_frame.pack_forget()
+            self.main_frame.pack(fill=tk.BOTH, expand=True)
+
+        self.frame_topleft.lift()  # 確保圖示永遠在最上層
+
+        self.is_showing_help = not self.is_showing_help
 
     def fishing_loop(self, total_seconds):
         x_start, y_start = 1790, 1050
