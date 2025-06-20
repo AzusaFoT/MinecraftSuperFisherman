@@ -6,6 +6,70 @@ import pyautogui
 from PIL import Image, ImageTk
 import os
 
+
+RGBMAP = [(235, 179, 178),(226, 177, 154),(223, 176, 148),(233, 178, 173),(222, 176, 146),
+        (239, 180, 188),(227, 177, 158),(220, 175, 141),(224, 176, 151),(221, 175, 143),
+        (219, 175, 138),(229, 177, 163),(222, 175, 144),(232, 178, 170),(225, 176, 153),
+        (217, 174, 133),(218, 175, 135),(223, 176, 147),(226, 177, 156),
+        (220, 175, 140),(222, 176, 145),(224, 176, 150),(219, 175, 137),
+        (221, 175, 142),(238, 180, 185),(225, 176, 152),(235, 179, 179),
+        (226, 177, 155),(233, 178, 174),(236, 179, 182),(228, 177, 161),
+        (223, 176, 146),(220, 175, 139),(223, 176, 149),(222, 176, 144),
+        (240, 180, 191),(230, 178, 165),(219, 175, 139),(224, 176, 149),
+        (221, 175, 141),(225, 176, 154) ]
+
+class ToggleSwitch(tk.Canvas):
+    def __init__(self, master=None, width=40, height=20, bg_color='#cccccc', active_color='#FF6600', knob_color='#ffffff', command=None, variable=None):
+        super().__init__(master, width=width, height=height, bg=master['bg'], highlightthickness=0)
+        self.bg_color = bg_color
+        self.active_color = active_color
+        self.knob_color = knob_color
+        self.command = command
+        self.variable = variable or tk.BooleanVar()
+        self.enabled = True  
+        self.bind('<Button-1>', self.toggle)
+        self.draw()
+
+    def draw(self):
+        self.delete("all")
+        is_on = self.variable.get()
+        self.create_rounded_rect(2, 2, 38, 18, radius=10, fill=self.active_color if is_on else self.bg_color)
+        if is_on:
+            self.create_oval(26, 4, 36, 14, fill=self.knob_color, outline="")
+        else:
+            self.create_oval(4, 4, 14, 14, fill=self.knob_color, outline="")
+
+    def toggle(self, event=None):
+        if not self.enabled: 
+            return
+        self.variable.set(not self.variable.get())
+        self.draw()
+        if self.command:
+            self.command()
+
+    def create_rounded_rect(self, x1, y1, x2, y2, radius=10, **kwargs):
+        points = [x1+radius, y1,
+                  x1+radius, y1,
+                  x2-radius, y1,
+                  x2-radius, y1,
+                  x2, y1,
+                  x2, y1+radius,
+                  x2, y1+radius,
+                  x2, y2-radius,
+                  x2, y2-radius,
+                  x2, y2,
+                  x2-radius, y2,
+                  x2-radius, y2,
+                  x1+radius, y2,
+                  x1+radius, y2,
+                  x1, y2,
+                  x1, y2-radius,
+                  x1, y2-radius,
+                  x1, y1+radius,
+                  x1, y1+radius,
+                  x1, y1]
+        return self.create_polygon(points, smooth=True, **kwargs)
+
 class FishingApp:
     def __init__(self, root):
         self.root = root
@@ -47,9 +111,9 @@ class FishingApp:
 
         # 剩餘時間標籤
         self.label_timer = tk.Label(self.main_frame, text="", font=self.font_name, fg="#333333")
-        self.label_timer.pack(pady=(5, 0))
+        self.label_timer.pack(pady=(10, 0))
 
-        # 圖片（左上角）
+        # 圖片與切換開關（左上角）
         self.frame_topleft = tk.Frame(self.root)
         self.frame_topleft.place(relx=0.0, rely=0.0, anchor='nw', x=10, y=10)
         try:
@@ -59,12 +123,18 @@ class FishingApp:
             self.label_img = tk.Label(self.frame_topleft, image=self.azusa_img, cursor="hand2")
             self.label_img.pack()
             self.label_img.bind("<Button-1>", self.toggle_help)
+
+            self.as_enabled = tk.BooleanVar(value=False)
+            self.as_switch = ToggleSwitch(self.frame_topleft, variable=self.as_enabled)
+            self.as_switch.pack(pady=(2, 0))
+            label_as = tk.Label(self.frame_topleft, text="A&S", font=self.font_name)
+            label_as.pack()
         except Exception as e:
             print("圖片載入失敗:", e)
 
         # 按鈕區域（放在最底下）
         frame_btn = tk.Frame(self.main_frame)
-        frame_btn.pack(side=tk.BOTTOM, pady=(0, 20))
+        frame_btn.pack(side=tk.BOTTOM, pady=(0,15))
 
         self.btn_start = tk.Button(
             frame_btn, text="開始釣魚", font=self.font_name,
@@ -83,19 +153,15 @@ class FishingApp:
 
         # 說明畫面
         self.help_frame = tk.Frame(root)
-        # 在 help_frame 中加一個中介 Frame
         self.help_inner_frame = tk.Frame(self.help_frame)
         self.help_inner_frame.pack(expand=True)
-
-        # 說明文字放進 inner_frame 並用 padding 適度控制
         self.label_help = tk.Label(
             self.help_inner_frame,
-            text="   AzusaFoT超級釣魚大師\n- 請確保您的釣竿有附魔\n- 請確保您是2K螢幕\n- 本工具只支援自動出竿\n   收竿要靠岩漿燒\n【按作者圖示返回主畫面】",
+            text="   AzusaFoT超級釣魚大師\n  請確保您的釣竿有附魔\n  請確保您是2K螢幕\n  本工具只支援自動出竿\n  收竿要靠岩漿燒\n  本軟體支援Actions & Stuff\n【按作者圖示返回主畫面】",
             font=self.font_name,
             justify="left"
         )
         self.label_help.pack(padx=10, pady=10)
-
 
         self.running = False
         self.thread = None
@@ -110,15 +176,20 @@ class FishingApp:
         else:
             self.help_frame.pack_forget()
             self.main_frame.pack(fill=tk.BOTH, expand=True)
-
-        self.frame_topleft.lift()  # 確保圖示永遠在最上層
-
+        self.frame_topleft.lift()
         self.is_showing_help = not self.is_showing_help
 
     def fishing_loop(self, total_seconds):
-        x_start, y_start = 1790, 1050
-        x_end, y_end = 1810, 1080
-        target_color = (255, 255, 255)
+        if self.as_enabled.get():
+            print("模式")
+            x_start, y_start = 1825, 860
+            x_end, y_end = 1836, 911
+            target_color = RGBMAP
+        else:
+            x_start, y_start = 1790, 1050
+            x_end, y_end = 1810, 1080
+            target_color = [(255, 255, 255)]
+
         step = 10
         end_time = time.time() + total_seconds
 
@@ -129,7 +200,8 @@ class FishingApp:
                         break
                     screenshot = pyautogui.screenshot(region=(x, y, 1, 1))
                     pixel_color = screenshot.getpixel((0, 0))
-                    if pixel_color == target_color:
+                    
+                    if pixel_color in target_color:
                         pyautogui.moveTo(x, y)
                         pyautogui.click(button='right')
                         print(f"右鍵點擊：{x}, {y}")
@@ -172,6 +244,8 @@ class FishingApp:
         self.btn_start.config(state=tk.DISABLED, bg="#A9A9A9", fg="#696969")
         self.btn_stop.config(state=tk.NORMAL, bg="#D50000", fg="black")
 
+        self.as_switch.enabled = False  # 禁用 toggle
+
         self.thread = threading.Thread(target=self.fishing_loop, args=(total_seconds,), daemon=True)
         self.thread.start()
         self.update_timer()
@@ -187,6 +261,8 @@ class FishingApp:
 
         self.btn_start.config(state=tk.NORMAL, bg="#FF6600", fg="white")
         self.btn_stop.config(state=tk.DISABLED, bg="#A9A9A9", fg="#696969")
+
+        self.as_switch.enabled = True  # 啟用 toggle
 
 if __name__ == "__main__":
     root = tk.Tk()
