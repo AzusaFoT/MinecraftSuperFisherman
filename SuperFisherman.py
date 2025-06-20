@@ -7,17 +7,6 @@ from PIL import Image, ImageTk
 import os
 
 
-RGBMAP = [(235, 179, 178),(226, 177, 154),(223, 176, 148),(233, 178, 173),(222, 176, 146),
-        (239, 180, 188),(227, 177, 158),(220, 175, 141),(224, 176, 151),(221, 175, 143),
-        (219, 175, 138),(229, 177, 163),(222, 175, 144),(232, 178, 170),(225, 176, 153),
-        (217, 174, 133),(218, 175, 135),(223, 176, 147),(226, 177, 156),
-        (220, 175, 140),(222, 176, 145),(224, 176, 150),(219, 175, 137),
-        (221, 175, 142),(238, 180, 185),(225, 176, 152),(235, 179, 179),
-        (226, 177, 155),(233, 178, 174),(236, 179, 182),(228, 177, 161),
-        (223, 176, 146),(220, 175, 139),(223, 176, 149),(222, 176, 144),
-        (240, 180, 191),(230, 178, 165),(219, 175, 139),(224, 176, 149),
-        (221, 175, 141),(225, 176, 154) ]
-
 class ToggleSwitch(tk.Canvas):
     def __init__(self, master=None, width=40, height=20, bg_color='#cccccc', active_color='#FF6600', knob_color='#ffffff', command=None, variable=None):
         super().__init__(master, width=width, height=height, bg=master['bg'], highlightthickness=0)
@@ -69,6 +58,9 @@ class ToggleSwitch(tk.Canvas):
                   x1, y1+radius,
                   x1, y1]
         return self.create_polygon(points, smooth=True, **kwargs)
+
+def color_diff(c1, c2):
+    return sum((a - b) ** 2 for a, b in zip(c1, c2)) ** 0.5
 
 class FishingApp:
     def __init__(self, root):
@@ -181,14 +173,16 @@ class FishingApp:
 
     def fishing_loop(self, total_seconds):
         if self.as_enabled.get():
-            print("模式")
+            print("模式：A&S")
             x_start, y_start = 1825, 860
             x_end, y_end = 1836, 911
-            target_color = RGBMAP
+            target_color = (227, 176, 159)  # 基準顏色
+            tolerance = 20  # 容錯範圍
         else:
             x_start, y_start = 1790, 1050
             x_end, y_end = 1810, 1080
-            target_color = [(255, 255, 255)]
+            target_color = (255, 255, 255)
+            tolerance = 0  
 
         step = 10
         end_time = time.time() + total_seconds
@@ -200,13 +194,13 @@ class FishingApp:
                         break
                     screenshot = pyautogui.screenshot(region=(x, y, 1, 1))
                     pixel_color = screenshot.getpixel((0, 0))
-                    
-                    if pixel_color in target_color:
+                    print(pixel_color)
+                    if color_diff(pixel_color, target_color) <= tolerance:
                         pyautogui.moveTo(x, y)
                         pyautogui.click(button='right')
                         print(f"右鍵點擊：{x}, {y}")
                         time.sleep(0.5)
-            time.sleep(1)
+            time.sleep(0.8)
         self.stop_fishing()
 
     def update_timer(self):
